@@ -27,32 +27,12 @@ struct DisplayData {
         String statusLabel;
     } airQuality;
     
-    struct ParticulateMatter {
-        uint16_t pm1_0;
-        uint16_t pm2_5;
-        uint16_t pm10;
-        bool valid;
-    } particulateMatter;
-    
-    struct AQI {
-        int value;
-        String category;
-    } aqi;
-    
     DisplayData() {
         airQuality.co2 = 0;
         airQuality.temperature = 0;
         airQuality.humidity = 0;
         airQuality.valid = false;
         airQuality.statusLabel = "Unknown";
-        
-        particulateMatter.pm1_0 = 0;
-        particulateMatter.pm2_5 = 0;
-        particulateMatter.pm10 = 0;
-        particulateMatter.valid = false;
-        
-        aqi.value = 0;
-        aqi.category = "Unknown";
     }
 };
 
@@ -87,8 +67,6 @@ private:
     // Private methods
     void drawStatusBar();
     void drawAirQualityData();
-    void drawParticulateMatterData();
-    void drawAQI();
     void drawFooter();
     String getAirQualityLabel(int co2);
     

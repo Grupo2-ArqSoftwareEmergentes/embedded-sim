@@ -16,14 +16,6 @@ enum AirQualityStatus {
  * @brief Thresholds for air quality evaluation
  */
 struct AirQualityThresholds {
-    // PM2.5 thresholds (ug/m3)
-    uint16_t pm25ModerateLimit = 35;   // EPA 24-hour standard
-    uint16_t pm25CriticalLimit = 55;    // Unhealthy for sensitive groups
-    
-    // PM10 thresholds (ug/m3)
-    uint16_t pm10ModerateLimit = 75;    // EPA 24-hour standard
-    uint16_t pm10CriticalLimit = 150;   // Unhealthy
-    
     // CO2 thresholds (ppm)
     uint16_t co2ModerateLimit = 1000;   // ASHRAE recommendation
     uint16_t co2CriticalLimit = 1500;   // Poor air quality
@@ -38,14 +30,10 @@ struct AirQualityThresholds {
     AirQualityThresholds() = default;
     
     // Constructor for custom configuration
-    AirQualityThresholds(uint16_t pm25Mod, uint16_t pm25Crit,
-                         uint16_t pm10Mod, uint16_t pm10Crit,
-                         uint16_t co2Mod, uint16_t co2Crit,
+    AirQualityThresholds(uint16_t co2Mod, uint16_t co2Crit,
                          uint8_t humModLow, uint8_t humModHigh,
                          uint8_t humCritLow, uint8_t humCritHigh)
-        : pm25ModerateLimit(pm25Mod), pm25CriticalLimit(pm25Crit),
-          pm10ModerateLimit(pm10Mod), pm10CriticalLimit(pm10Crit),
-          co2ModerateLimit(co2Mod), co2CriticalLimit(co2Crit),
+        : co2ModerateLimit(co2Mod), co2CriticalLimit(co2Crit),
           humidityModerateLow(humModLow), humidityModerateHigh(humModHigh),
           humidityCriticalLow(humCritLow), humidityCriticalHigh(humCritHigh) {}
 };

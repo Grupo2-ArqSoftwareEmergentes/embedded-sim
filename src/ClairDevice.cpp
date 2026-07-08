@@ -15,12 +15,10 @@ static const unsigned long SIM_CYCLE_DURATION = SIM_PHASE_OPTIMAL_DURATION +
 // Constructor con struct de pines
 ClairDevice::ClairDevice(const ClairPins& pins, 
                          unsigned long scd41Interval,
-                         unsigned long pmsInterval,
                          unsigned long reportInterval,
                          int displaySda,
                          int displayScl)
     : scd41Device(pins.scd41_sda, pins.scd41_scl, scd41Interval),
-      pms5003Device(pins.pms_rx, pins.pms_tx, pins.pms_set, pins.pms_reset, pmsInterval),
       display(128, 64, displaySda, displayScl, 0x3C, this),
       warningLed(pins.led_pin, false, true, this),  // LED simple: pin, initialState=false, activeHigh=true
       lastReportTime(0),
@@ -40,15 +38,13 @@ ClairDevice::ClairDevice(const ClairPins& pins,
       standbyMode(false) {}
 
 // Constructor con parámetros individuales
-ClairDevice::ClairDevice(int sda, int scl, int rx, int tx, int set, int reset,
+ClairDevice::ClairDevice(int sda, int scl,
                          unsigned long scd41Interval,
-                         unsigned long pmsInterval,
                          unsigned long reportInterval,
                          int displaySda,
                          int displayScl,
                          int ledPin)
     : scd41Device(sda, scl, scd41Interval),
-      pms5003Device(rx, tx, set, reset, pmsInterval),
       display(128, 64, displaySda, displayScl, 0x3C, this),
       warningLed(ledPin, false, true, this),  // LED simple
       lastReportTime(0),
@@ -77,7 +73,6 @@ bool ClairDevice::begin() {
     Serial.println("[ClairDevice] Starting non-blocking initialization...");
     
     scd41Device.getSensor().begin();
-    pms5003Device.getSensor().begin();
     display.begin();
     warningLed.off();  // Forzar LED apagado
     
@@ -266,26 +261,22 @@ void ClairDevice::updateInitialization() {
     
     if (initState == INIT_WAITING_SENSORS) {
         bool scd41Ready = scd41Device.getSensor().isInitialized();
-        bool pmsReady = pms5003Device.getSensor().isInitialized();
         
-        if (scd41Ready && pmsReady) {
+        if (scd41Ready) {
             initState = INIT_COMPLETE;
             allSensorsReady = true;
-            Serial.println("[ClairDevice] All sensors initialized successfully!");
+            Serial.println("[ClairDevice] SCD41 initialized successfully!");
         }
         else if (now - initStartTime >= INIT_TIMEOUT_MS) {
             initTimeoutOccurred = true;
             
-            if (scd41Ready || pmsReady) {
+            if (scd41Ready) {
                 initState = INIT_PARTIAL;
                 allSensorsReady = false;
-                Serial.print("[ClairDevice] Initialization partial. SCD41: ");
-                Serial.print(scd41Ready ? "OK" : "FAIL");
-                Serial.print(", PMS5003: ");
-                Serial.println(pmsReady ? "OK" : "FAIL");
+                Serial.println("[ClairDevice] Initialization partial. SCD41: OK");
             } else {
                 initState = INIT_PARTIAL;
-                Serial.println("[ClairDevice] WARNING: No sensors initialized!");
+                Serial.println("[ClairDevice] WARNING: SCD41 not initialized!");
             }
         }
     }
@@ -329,9 +320,7 @@ void ClairDevice::update() {
             updateSimulationData();
         } else {
             scd41Device.update();
-            pms5003Device.update();
             updateAirQualityData();
-            updateParticulateMatterData();
         }        
         
         if (!displayInitialized || currentData.status != lastDisplayedStatus) {
@@ -391,24 +380,6 @@ void ClairDevice::updateAirQualityData() {
     }
 }
 
-void ClairDevice::updateParticulateMatterData() {
-    if (pms5003Device.getSensor().isInitialized()) {
-        PMS5003Data pmsData = pms5003Device.getSensor().getData();
-        currentData.particulateMatter.pm1_0 = pmsData.pm1_0;
-        currentData.particulateMatter.pm2_5 = pmsData.pm2_5;
-        currentData.particulateMatter.pm10 = pmsData.pm10;
-        currentData.particulateMatter.valid = pmsData.valid;
-        
-        if (pmsData.valid) {
-            currentData.calculateAQI();
-        }
-    } else {
-        currentData.particulateMatter.valid = false;
-    }
-    
-    currentData.evaluateStatus(thresholds);
-}
-
 void ClairDevice::generateUnifiedReport() {
     currentData.timestamp = millis();
     currentData.print();
@@ -419,10 +390,6 @@ void ClairDevice::on(Event event) {
     if (event.id == SCD41Sensor::DATA_READY_EVENT_ID) {
         updateAirQualityData();
         Serial.println("New air quality data");
-    }
-    else if (event.id == PMS5003Sensor::DATA_READY_EVENT_ID) {
-        updateParticulateMatterData();
-        Serial.println("New particulate matter data");
     }
 }
 
@@ -438,7 +405,6 @@ void ClairDevice::handle(Command command) {
     }
     else if (command.id == CLAIR_RESET_COMMAND) {
         Serial.println("Reset");
-        pms5003Device.getSensor().reset();
     }
     else if (command.id == OLEDDisplay::DISPLAY_ON_COMMAND ||
              command.id == OLEDDisplay::DISPLAY_OFF_COMMAND ||
@@ -466,14 +432,20 @@ void ClairDevice::handle(Command command) {
 }
 
 ClairData ClairDevice::getCurrentData() {
-    updateAirQualityData();
-    updateParticulateMatterData();
+    if (simulationEnabled) {
+        updateSimulationData();
+    } else {
+        updateAirQualityData();
+    }
     return currentData;
 }
 
 void ClairDevice::forceReport() {
-    updateAirQualityData();
-    updateParticulateMatterData();
+    if (simulationEnabled) {
+        updateSimulationData();
+    } else {
+        updateAirQualityData();
+    }
     generateUnifiedReport();
 }
 
@@ -485,14 +457,6 @@ void ClairDevice::refreshDisplay() {
     displayData.airQuality.humidity = currentData.airQuality.humidity;
     displayData.airQuality.valid = currentData.airQuality.valid;
     displayData.airQuality.statusLabel = currentData.statusLabel;
-
-    displayData.particulateMatter.pm1_0 = currentData.particulateMatter.pm1_0;
-    displayData.particulateMatter.pm2_5 = currentData.particulateMatter.pm2_5;
-    displayData.particulateMatter.pm10 = currentData.particulateMatter.pm10;
-    displayData.particulateMatter.valid = currentData.particulateMatter.valid;
-
-    displayData.aqi.value = currentData.airQualityIndex.aqi;
-    displayData.aqi.category = currentData.airQualityIndex.category;
 
     display.updateData(displayData);
 }
@@ -512,42 +476,22 @@ void ClairDevice::updateSimulationData() {
 
     currentData.timestamp = now;
     currentData.airQuality.valid = true;
-    currentData.particulateMatter.valid = true;
 
     if (phase == 0) {
         currentData.airQuality.co2 = 480 + (now / 1000) % 120;
         currentData.airQuality.temperature = 23.5 + ((now / 5000) % 3) * 0.4;
         currentData.airQuality.humidity = 42.0 + ((now / 3000) % 4) * 1.0;
-        currentData.particulateMatter.pm1_0 = 3 + ((now / 4000) % 3);
-        currentData.particulateMatter.pm2_5 = 6 + ((now / 3000) % 4);
-        currentData.particulateMatter.pm10 = 12 + ((now / 2500) % 5);
     } else if (phase == 1) {
         currentData.airQuality.co2 = 880 + (now / 800) % 180;
         currentData.airQuality.temperature = 25.0 + ((now / 4000) % 3) * 0.5;
         currentData.airQuality.humidity = 54.0 + ((now / 2500) % 5) * 0.8;
-        currentData.particulateMatter.pm1_0 = 9 + ((now / 2000) % 4);
-        currentData.particulateMatter.pm2_5 = 24 + ((now / 2500) % 10);
-        currentData.particulateMatter.pm10 = 55 + ((now / 2000) % 12);
     } else {
         currentData.airQuality.co2 = 1500 + (now / 700) % 500;
         currentData.airQuality.temperature = 27.0 + ((now / 3000) % 3) * 0.6;
         currentData.airQuality.humidity = 72.0 + ((now / 2000) % 4) * 1.2;
-        currentData.particulateMatter.pm1_0 = 22 + ((now / 1500) % 8);
-        currentData.particulateMatter.pm2_5 = 55 + ((now / 2000) % 20);
-        currentData.particulateMatter.pm10 = 145 + ((now / 1500) % 30);
     }
 
-    currentData.calculateAQI();
     currentData.evaluateStatus(thresholds);
-}
-
-String ClairDevice::getAirQualityLabel(int co2) {
-    if (co2 < 400) return "Excellent";
-    if (co2 < 600) return "Good";
-    if (co2 < 800) return "Normal";
-    if (co2 < 1000) return "Moderate";
-    if (co2 < 1500) return "Poor";
-    return "Bad";
 }
 
 void ClairDevice::setupWiFi(const String& ssid, const String& password) {
@@ -570,22 +514,14 @@ void ClairDevice::setStandbyMode(bool standby) {
         
         display.off();
         warningLed.off();
-        
-        if (pms5003Device.getSensor().isInitialized()) {
-            pms5003Device.getSensor().sleep();
-        }
-        
+
         edge.setTelemetryEnabled(false);
         
     } else {
         Serial.println("[ClairDevice] Exiting STANDBY mode - resuming normal operation");
         
         display.on();
-        
-        if (pms5003Device.getSensor().isInitialized()) {
-            pms5003Device.getSensor().wake();
-        }
-        
+
         edge.setTelemetryEnabled(true);
         forceReport();
     }

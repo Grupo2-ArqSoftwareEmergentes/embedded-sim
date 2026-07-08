@@ -5,7 +5,6 @@
 
 #include "Device.h"
 #include "SCD41SensorDevice.h"
-#include "PMS5003SensorDevice.h"
 #include "OLEDDisplay.h"
 #include "ClairData.h"
 #include "AirQualityStatus.h"
@@ -20,17 +19,12 @@
 struct ClairPins {
     int scd41_sda = 21;
     int scd41_scl = 22;
-    int pms_rx = 16;
-    int pms_tx = 17;
-    int pms_set = 18;
-    int pms_reset = 19;
     int led_pin = 25;       // Pin para el LED simple
     
     ClairPins() = default;
     
-    ClairPins(int sda, int scl, int rx, int tx, int set, int reset, int led = 25) 
-        : scd41_sda(sda), scd41_scl(scl), pms_rx(rx), pms_tx(tx), 
-          pms_set(set), pms_reset(reset), led_pin(led) {}
+    ClairPins(int sda, int scl, int led = 25) 
+        : scd41_sda(sda), scd41_scl(scl), led_pin(led) {}
 };
 
 /**
@@ -54,7 +48,6 @@ private:
     
     // Sensores y actuadores
     SCD41SensorDevice scd41Device;
-    PMS5003SensorDevice pms5003Device;
     OLEDDisplay display;
     Led warningLed;              // LED simple
     
@@ -91,9 +84,7 @@ private:
     
     // Métodos privados
     void updateAirQualityData();
-    void updateParticulateMatterData();
     void generateUnifiedReport();
-    void checkSensorStatus();
     void refreshDisplay();
     void updateSimulationData();
     void updateInitialization();
@@ -103,9 +94,6 @@ private:
     static void onIncidentDetected(const Incident& incident);
     static void onIncidentResolved(const Incident& incident);
     static bool processRemoteCommand(const RemoteCommand& cmd);
-    
-    // Helper methods
-    String getAirQualityLabel(int co2);
     
 public:
     // Command IDs for Clair System
@@ -128,15 +116,13 @@ public:
     // Constructor con struct de pines
     ClairDevice(const ClairPins& pins = ClairPins(), 
                 unsigned long scd41Interval = 2000,
-                unsigned long pmsInterval = 2000,
                 unsigned long reportInterval = 10000,
                 int displaySda = 21,
                 int displayScl = 22);
     
     // Constructor con parámetros individuales
-    ClairDevice(int sda, int scl, int rx, int tx, int set, int reset,
+    ClairDevice(int sda, int scl,
                 unsigned long scd41Interval = 2000,
-                unsigned long pmsInterval = 2000,
                 unsigned long reportInterval = 10000,
                 int displaySda = 21,
                 int displayScl = 22,
@@ -155,7 +141,6 @@ public:
     
     // Acceso a componentes
     SCD41SensorDevice& getSCD41Device() { return scd41Device; }
-    PMS5003SensorDevice& getPMS5003Device() { return pms5003Device; }
     OLEDDisplay& getDisplay() { return display; }
     Led& getWarningLed() { return warningLed; }
     

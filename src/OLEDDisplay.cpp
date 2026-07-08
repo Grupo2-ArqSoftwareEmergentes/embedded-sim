@@ -64,47 +64,14 @@ void OLEDDisplay::refresh() {
     
     // Line 1: Status
     display.setCursor(0, y);
-    //display.print("Status: ");
-    //display.println(currentData.airQuality.statusLabel);
+    display.print("Status: ");
+    display.println(currentData.airQuality.statusLabel);
     y += lineHeight;
     
     // Blank line
     y += lineHeight/2;
-    
-    // Line 2: PM1.0
-    display.setCursor(0, y);
-    display.print("PM1.0: ");
-    if (currentData.particulateMatter.valid) {
-        display.print(currentData.particulateMatter.pm1_0);
-    } else {
-        display.print("--");
-    }
-    display.println(" ug/m3");
-    y += lineHeight;
-    
-    // Line 3: PM2.5
-    display.setCursor(0, y);
-    display.print("PM2.5: ");
-    if (currentData.particulateMatter.valid) {
-        display.print(currentData.particulateMatter.pm2_5);
-    } else {
-        display.print("--");
-    }
-    display.println(" ug/m3");
-    y += lineHeight;
-    
-    // Line 4: PM10
-    display.setCursor(0, y);
-    display.print("PM10 : ");
-    if (currentData.particulateMatter.valid) {
-        display.print(currentData.particulateMatter.pm10);
-    } else {
-        display.print("--");
-    }
-    display.println(" ug/m3");
-    y += lineHeight;
-    
-    // Line 5: CO2
+
+    // Line 2: CO2
     display.setCursor(0, y);
     display.print("CO2  : ");
     if (currentData.airQuality.valid) {
@@ -115,17 +82,26 @@ void OLEDDisplay::refresh() {
     display.println(" ppm");
     y += lineHeight;
     
-    // Line 6: T/H
+    // Line 3: Temperature
     display.setCursor(0, y);
-    display.print("T/H  : ");
+    display.print("Temp : ");
     if (currentData.airQuality.valid) {
         display.print(currentData.airQuality.temperature, 1);
-        display.print("C ");
-        display.print(currentData.airQuality.humidity, 0);
-        display.print("%");
     } else {
         display.print("--");
     }
+    display.println(" C");
+    y += lineHeight;
+    
+    // Line 4: Humidity
+    display.setCursor(0, y);
+    display.print("Hum  : ");
+    if (currentData.airQuality.valid) {
+        display.print(currentData.airQuality.humidity, 0);
+    } else {
+        display.print("--");
+    }
+    display.println(" %");
     
     display.display();
 }

@@ -105,14 +105,6 @@ private:
             airQuality["humidity"] = data.airQuality.humidity;
         }
         
-        // Particulate matter
-        JsonObject particulate = doc.createNestedObject("particulateMatter");
-        if (data.particulateMatter.valid) {
-            particulate["pm1_0"] = data.particulateMatter.pm1_0;
-            particulate["pm2_5"] = data.particulateMatter.pm2_5;
-            particulate["pm10"] = data.particulateMatter.pm10;
-        }
-        
         // Connectivity
         JsonObject connectivity = doc.createNestedObject("connectivity");
         if (WiFi.status() == WL_CONNECTED) {
@@ -143,7 +135,6 @@ private:
     int calculateHealthStatus(const ClairData& data) {
         int health = 100;
         health -= (data.airQuality.valid ? 0 : 25);
-        health -= (data.particulateMatter.valid ? 0 : 25);
         health -= (WiFi.status() == WL_CONNECTED ? (WiFi.RSSI() < -70 ? 15 : 0) : 30);
         return (health < 0) ? 0 : (health > 100 ? 100 : health);
     }

@@ -20,7 +20,6 @@ int calculateSimpleHealth(const ClairData& data) {
     
     // Todo en una línea de cálculo
     health -= (data.airQuality.valid ? 0 : 25);
-    health -= (data.particulateMatter.valid ? 0 : 25);
     health -= (WiFi.status() == WL_CONNECTED ? (WiFi.RSSI() < -70 ? 15 : 0) : 30);
     
     return (health < 0) ? 0 : (health > 100 ? 100 : health);
@@ -52,14 +51,6 @@ String CloudService::buildPayload(const ClairData& data) {
         airQuality["co2"] = data.airQuality.co2;
         airQuality["temperature"] = data.airQuality.temperature;
         airQuality["humidity"] = data.airQuality.humidity;        
-    } 
-
-    // Particulate matter data (PMS5003)
-    JsonObject particulate = doc.createNestedObject("particulateMatter");
-    if (data.particulateMatter.valid) {
-        particulate["pm1_0"] = data.particulateMatter.pm1_0;
-        particulate["pm2_5"] = data.particulateMatter.pm2_5;
-        particulate["pm10"] = data.particulateMatter.pm10;
     } 
 
     // Connectivity info
