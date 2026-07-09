@@ -131,6 +131,13 @@ void ClairDevice::setupIncidentManager(const String& baseUrl, const String& hard
     incidentManager.begin(baseUrl, hardwareId, apiKey, pollInterval);
     incidentManager.setCallbacks(onIncidentDetected, onIncidentResolved);
     Serial.println("[ClairDevice] Incident Manager configured");
+
+    // Si ya hay conectividad, traemos el estado persistido de incidentes al arrancar.
+    if (wifi.isConnected()) {
+        incidentManager.pollIncidents();
+        incidentManager.process();
+        updateWarningLed();
+    }
 }
 
 // Callbacks de incidentes
@@ -296,15 +303,25 @@ const char* ClairDevice::getInitStateString() const {
 // Actualizar todos los sensores
 void ClairDevice::update() {    
     updateInitialization();
-    
+
+    // Mantener la conectividad y los incidentes vivos aunque los sensores sigan inicializando.
+    wifi.update();
+    if (wifi.isConnected()) {
+        incidentManager.pollIncidents();
+        incidentManager.process();
+    }
+
+    if (initState != INIT_COMPLETE && initState != INIT_PARTIAL) {
+        updateWarningLed();
+        return;
+    }
+
     if (initState == INIT_COMPLETE || initState == INIT_PARTIAL) {
         
         unsigned long now = millis();
         
         // === MODO STANDBY ===
         if (standbyMode) {
-            wifi.update();
-            
             if (wifi.isConnected()) {
                 edge.pollCommands();
                 edge.processCommandQueue();                
@@ -331,15 +348,12 @@ void ClairDevice::update() {
         display.autoPowerManagement();
 
         updateWarningLed();  // Control del LED
-        
-        wifi.update();
         updateNTP();
         
         if (wifi.isConnected()) {
             edge.sendTelemetry(currentData);
             edge.pollCommands();        
             edge.processCommandQueue();
-            incidentManager.pollIncidents();
             incidentManager.process();
         }
         
