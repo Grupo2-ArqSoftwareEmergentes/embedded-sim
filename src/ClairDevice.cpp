@@ -164,12 +164,16 @@ void ClairDevice::updateWarningLed() {
     // - ACTIVE => encender/parpadear
     // - count == 0 o incidente ausente en /pending => apagar
     if (incidentManager.hasActiveIncidents()) {
+        Serial.printf("[LED] STATUS ACTIVE\n");
+        Serial.printf("[LED] count == %d\n", incidentManager.getActiveCount());
         if (!warningLed.isBlinking()) {
             warningLed.startBlink(500);  // Parpadeo cada 500ms
             Serial.printf("[LED] 🔴 Blinking started - %d incident(s) active\n", 
                           incidentManager.getActiveCount());
         }
     } else {
+        Serial.printf("[LED] STATUS INACTIVE\n");
+        Serial.printf("[LED] count == %d\n", incidentManager.getActiveCount());
         if (warningLed.isBlinking() || warningLed.getState()) {
             warningLed.off();
             Serial.println("[LED] ⚫ OFF - No incidents");
