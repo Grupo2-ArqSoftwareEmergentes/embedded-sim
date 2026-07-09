@@ -144,12 +144,14 @@ void ClairDevice::setupIncidentManager(const String& baseUrl, const String& hard
 void ClairDevice::onIncidentDetected(const Incident& incident) {
     Serial.println("\n🔴🔴🔴 INCIDENT ACTIVATED 🔴🔴🔴");
     incident.print();
+    Serial.printf("[LED] ACTIVE - incident #%d\n", incident.id);
     // El LED se actualizará automáticamente en updateWarningLed()
 }
 
 void ClairDevice::onIncidentResolved(const Incident& incident) {
     Serial.println("\n🟢🟢🟢 INCIDENT RESOLVED 🟢🟢🟢");
     incident.print();
+    Serial.printf("[LED] RESOLVED - incident #%d\n", incident.id);
     // El LED se actualizará automáticamente en updateWarningLed()
 }
 
@@ -162,7 +164,8 @@ void ClairDevice::updateWarningLed() {
     
     // Regla del embedded:
     // - ACTIVE => encender/parpadear
-    // - count == 0 o incidente ausente en /pending => apagar
+    // - /pending vacío no apaga por sí solo, porque puede significar "ya entregado"
+    //   y no necesariamente "resuelto"
     if (incidentManager.hasActiveIncidents()) {
         if (!warningLed.isBlinking()) {
             warningLed.startBlink(500);  // Parpadeo cada 500ms

@@ -420,22 +420,8 @@ bool pollIncidents() {
         
         int count = doc["count"] | 0;
 
-        // Regla del embedded: si no hay incidentes pendientes, la alerta local se apaga.
         if (count == 0) {
-            if (incidentCount > 0) {
-                Serial.printf("[IncidentManager] Pending list empty / incident disappeared - Clearing all %d active incidents\n", incidentCount);
-
-                for (int i = 0; i < incidentCount; i++) {
-                    if (onIncidentResolved) {
-                        onIncidentResolved(activeIncidents[i]);
-                    }
-
-                    queueAck(activeIncidents[i].id, "RESOLVED");
-                }
-
-                incidentCount = 0;
-            }
-
+            Serial.println("[IncidentManager] Pending list empty - no events to process");
             return false;
         }
 
@@ -453,6 +439,9 @@ bool pollIncidents() {
                 String occurredAt = evt["occurred_at"] | "";
                 String resolvedAt = evt["resolved_at"] | "";
                 String normalizedMetric = normalizeMetric(metric);
+
+                Serial.printf("[IncidentManager] Event received: #%d metric=%s status=%s\n",
+                              id, normalizedMetric.c_str(), status.c_str());
                 
                 int metricIdx = metricIndex(metric);
                 if (status == "ACTIVE" && metricIdx >= 0) {
