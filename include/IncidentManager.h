@@ -418,8 +418,27 @@ bool pollIncidents() {
             return false;
         }
         
-        int count = doc["count"] | 0;
-        
+        int count = doc["count"] | 0;
+
+        // Regla del embedded: si no hay incidentes pendientes, la alerta local se apaga.
+        if (count == 0) {
+            if (incidentCount > 0) {
+                Serial.printf("[IncidentManager] Pending list empty / incident disappeared - Clearing all %d active incidents\n", incidentCount);
+
+                for (int i = 0; i < incidentCount; i++) {
+                    if (onIncidentResolved) {
+                        onIncidentResolved(activeIncidents[i]);
+                    }
+
+                    queueAck(activeIncidents[i].id, "RESOLVED");
+                }
+
+                incidentCount = 0;
+            }
+
+            return false;
+        }
+
         if (count > 0 && doc["events"].is<JsonArray>()) {
             JsonArray events = doc["events"].as<JsonArray>();
             

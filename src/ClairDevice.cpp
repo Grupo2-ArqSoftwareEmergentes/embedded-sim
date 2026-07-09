@@ -160,7 +160,9 @@ void ClairDevice::updateWarningLed() {
         return;
     }
     
-    // Comportamiento: LED parpadea si hay incidentes activos
+    // Regla del embedded:
+    // - ACTIVE => encender/parpadear
+    // - count == 0 o incidente ausente en /pending => apagar
     if (incidentManager.hasActiveIncidents()) {
         if (!warningLed.isBlinking()) {
             warningLed.startBlink(500);  // Parpadeo cada 500ms
