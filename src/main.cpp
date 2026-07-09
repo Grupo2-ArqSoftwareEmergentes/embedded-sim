@@ -10,8 +10,8 @@
 
 // Simplificado - una sola URL 
 #define EDGE_BASE_URL "http://192.168.1.35:5000"  // Cambiar por tu URL real, solo http no https
-#define HARDWARE_ID "VINE-A001"
-#define API_KEY "nTfOgTdttLnvc_v8gpPT_sPrGVgFkxUxFrjeNdrPYjc"
+#define HARDWARE_ID "VINE-A002"
+#define API_KEY "ZJie3qjp0a8SWR1MangSDP3rIqdM2B4wCweNOwL1pu0"
 
 #define CLOUD_SEND_INTERVAL 10000      // 10 segundos - telemetría al Cloud
 #define REMOTE_COMMAND_POLL_INTERVAL 5000     // 5 segundos - comandos desde Edge
