@@ -89,6 +89,7 @@ private:
     void updateSimulationData();
     void updateInitialization();
     void updateWarningLed();     // Control del LED basado en incidentes
+    void printLedStatus();       // Log periódico del estado del LED
     
     // Callbacks estáticos
     static void onIncidentDetected(const Incident& incident);
